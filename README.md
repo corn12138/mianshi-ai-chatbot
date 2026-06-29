@@ -89,6 +89,35 @@ Web Chat UI
 
 在 DeepSeek 模式下，本地 `ToolRouter` 仍负责稳定触发工具；DeepSeek 负责普通自然语言回复，以及把工具执行结果总结成最终回答。
 
+## 如何确认正在调用 DeepSeek
+
+浏览器 DevTools 的 Network 只能看到前端请求本地 API：`POST http://localhost:3000/api/chat`。后端到 DeepSeek 的服务器侧请求不会直接出现在浏览器 Network 中。
+
+确认方式：
+
+1. 页面右上角模式徽标显示 `DeepSeek API` 和当前模型名。
+2. Network -> `chat` -> Preview 中查看：
+
+```json
+{
+  "mode": "llm",
+  "provider": {
+    "name": "deepseek",
+    "label": "DeepSeek",
+    "model": "deepseek-v4-flash",
+    "baseUrl": "https://api.deepseek.com"
+  }
+}
+```
+
+3. 后端终端会输出脱敏请求日志：
+
+```text
+[llm] provider=deepseek model=deepseek-v4-flash endpoint=https://api.deepseek.com/chat/completions tools=auto
+```
+
+以上信息不会输出 API Key。
+
 ## 验证
 
 ```bash

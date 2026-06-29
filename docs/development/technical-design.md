@@ -96,6 +96,17 @@ Content-Type: application/json
 - DeepSeek 负责普通自然语言回复，以及在工具执行后将工具结果总结成最终回答。
 - 默认仍保留 mock 模式，避免评审没有真实 API Key 时无法启动核心流程。
 
+## 运行态可观测性
+
+为了方便验收时确认当前是否真的接入 DeepSeek，`POST /api/chat` 会返回脱敏 provider 元信息：
+
+- `mode`: `mock` 或 `llm`。
+- `provider.name`: `mock`、`deepseek` 或 `openai-compatible`。
+- `provider.model`: 当前模型名。
+- `provider.baseUrl`: 真实模型服务地址，不包含 API Key。
+
+前端会把这些信息展示为顶部模式徽标，例如 `DeepSeek API / deepseek-v4-flash`。后端发起 DeepSeek 请求时也会输出脱敏日志，便于录屏证明浏览器本地 API 背后发生了服务器侧模型调用。
+
 ## 真模型模式
 
 当 `LLM_PROVIDER=openai-compatible` 且存在 `OPENAI_API_KEY` 时启用通用 OpenAI-compatible provider。真实模型模式保留为可选增强，不影响 mock MVP 验收。
@@ -104,7 +115,7 @@ Content-Type: application/json
 
 - 内存 session 重启后丢失。
 - 工具路由以演示级规则为主。
-- DeepSeek 模式当前没有使用原生 Tool Calls，而是采用“本地工具路由 + DeepSeek 总结工具结果”的稳妥 MVP 方案。
+- DeepSeek 模式支持将工具 schema 交给模型规划，同时保留本地 `ToolRouter` 兜底，避免模型没有稳定触发工具时影响 MVP 演示。
 - 未实现登录、权限、数据库、RAG、流式输出和线上部署。
 
 这些限制是有意取舍，目的是优先保证开放题要求的核心流程清晰、稳定、可解释。

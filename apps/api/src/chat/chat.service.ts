@@ -67,6 +67,7 @@ export class ChatService {
       messages: this.sessions.getMessages(sessionId),
       toolCalls,
       mode: this.llm.mode,
+      provider: this.llm.info,
     };
   }
 }

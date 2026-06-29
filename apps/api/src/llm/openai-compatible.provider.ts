@@ -5,6 +5,12 @@ export class OpenAICompatibleProvider implements LlmProvider {
   private readonly baseUrl = process.env.OPENAI_BASE_URL ?? 'https://api.openai.com/v1';
   private readonly model = process.env.OPENAI_MODEL ?? 'gpt-4o-mini';
   private readonly apiKey = process.env.OPENAI_API_KEY;
+  readonly info = {
+    name: 'openai-compatible',
+    label: 'OpenAI Compatible',
+    model: this.model,
+    baseUrl: this.baseUrl,
+  } as const;
 
   async plan(input: LlmPlanInput): Promise<LlmPlan> {
     const content = await this.complete([

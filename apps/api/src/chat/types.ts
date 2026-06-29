@@ -1,4 +1,5 @@
 import type { ToolCallRecord } from '../tools/tools.types';
+import type { LlmProviderInfo } from '../llm/llm-provider.interface';
 
 export type ChatRole = 'user' | 'assistant' | 'system';
 
@@ -20,4 +21,5 @@ export interface ChatResponse {
   messages: ChatMessage[];
   toolCalls: ToolCallRecord[];
   mode: 'mock' | 'llm';
+  provider: LlmProviderInfo;
 }

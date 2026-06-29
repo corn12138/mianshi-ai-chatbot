@@ -2,6 +2,11 @@ import type { ComposeReplyInput, LlmPlan, LlmPlanInput, LlmProvider } from './ll
 
 export class MockLlmProvider implements LlmProvider {
   readonly mode = 'mock' as const;
+  readonly info = {
+    name: 'mock',
+    label: 'Mock LLM',
+    model: 'deterministic-local-mock',
+  } as const;
 
   async plan(input: LlmPlanInput): Promise<LlmPlan> {
     const text = input.message.toLowerCase();

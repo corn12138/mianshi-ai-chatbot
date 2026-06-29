@@ -18,8 +18,16 @@ export interface ComposeReplyInput extends LlmPlanInput {
   toolCalls: ToolCallRecord[];
 }
 
+export interface LlmProviderInfo {
+  name: 'mock' | 'deepseek' | 'openai-compatible';
+  label: string;
+  model: string;
+  baseUrl?: string;
+}
+
 export interface LlmProvider {
   mode: 'mock' | 'llm';
+  info: LlmProviderInfo;
   plan(input: LlmPlanInput): Promise<LlmPlan>;
   composeReply(input: ComposeReplyInput): Promise<string>;
 }

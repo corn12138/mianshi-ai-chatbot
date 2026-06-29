@@ -37,6 +37,8 @@ describe('ChatService', () => {
     const response = await service.chat({ message: '公司年假政策是什么？' });
 
     expect(response.mode).toBe('mock');
+    expect(response.provider.name).toBe('mock');
+    expect(response.provider.model).toBe('deterministic-local-mock');
     expect(response.reply).toContain('年假政策');
     // The persisted assistant message must carry the same final reply.
     const assistant = response.messages.at(-1);

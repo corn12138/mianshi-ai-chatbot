@@ -22,6 +22,12 @@ type ChatResponse = {
   messages: ChatMessage[];
   toolCalls: ToolCall[];
   mode: 'mock' | 'llm';
+  provider: {
+    name: 'mock' | 'deepseek' | 'openai-compatible';
+    label: string;
+    model: string;
+    baseUrl?: string;
+  };
 };
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000';
@@ -41,6 +47,11 @@ function App() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState('');
   const [mode, setMode] = useState<'mock' | 'llm'>('mock');
+  const [provider, setProvider] = useState<ChatResponse['provider']>({
+    name: 'mock',
+    label: 'Mock LLM',
+    model: 'deterministic-local-mock',
+  });
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const canSend = useMemo(() => draft.trim().length > 0 && !isSending, [draft, isSending]);
@@ -76,6 +87,7 @@ function App() {
       setSessionId(data.sessionId);
       setMessages(data.messages);
       setMode(data.mode);
+      setProvider(data.provider);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : '发送失败');
     } finally {
@@ -91,7 +103,10 @@ function App() {
             <h1>Internal AI Chatbot MVP</h1>
             <p>面向内部员工的多轮对话、mock LLM 和自动工具调用演示。</p>
           </div>
-          <span className="mode-pill">{mode === 'mock' ? 'Mock Mode' : 'LLM Mode'}</span>
+          <span className="mode-pill">
+            <strong>{mode === 'mock' ? 'Mock Mode' : `${provider.label} API`}</strong>
+            <small>{provider.model}</small>
+          </span>
         </header>
 
         <div className="examples" aria-label="示例问题">

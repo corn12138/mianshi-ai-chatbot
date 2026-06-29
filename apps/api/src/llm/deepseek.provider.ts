@@ -38,6 +38,12 @@ export class DeepSeekProvider implements LlmProvider {
   private readonly baseUrl = process.env.DEEPSEEK_BASE_URL ?? 'https://api.deepseek.com';
   private readonly model = process.env.DEEPSEEK_MODEL ?? 'deepseek-v4-flash';
   private readonly thinking = process.env.DEEPSEEK_THINKING ?? 'disabled';
+  readonly info = {
+    name: 'deepseek',
+    label: 'DeepSeek',
+    model: this.model,
+    baseUrl: this.baseUrl,
+  } as const;
 
   async plan(input: LlmPlanInput): Promise<LlmPlan> {
     const message = await this.chat(
@@ -190,6 +196,8 @@ export class DeepSeekProvider implements LlmProvider {
     if (!this.apiKey) {
       throw new Error('DEEPSEEK_API_KEY or DeepSeek_KEY is required for deepseek mode');
     }
+
+    console.info(`[llm] provider=deepseek model=${this.model} endpoint=${this.baseUrl}/chat/completions tools=${tools ? 'auto' : 'none'}`);
 
     const response = await fetch(`${this.baseUrl}/chat/completions`, {
       method: 'POST',
