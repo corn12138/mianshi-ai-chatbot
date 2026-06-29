@@ -1,6 +1,7 @@
 import type { ChatMessage } from '../chat/types';
 import type { ToolIntent, ToolName } from '../tools/tools.types';
 import type { ComposeReplyInput, LlmPlan, LlmPlanInput, LlmProvider } from './llm-provider.interface';
+import { requestChatCompletion, type ChatCompletionMessage } from './llm-http';
 
 type DeepSeekMessage = {
   role: 'system' | 'user' | 'assistant';
@@ -23,15 +24,7 @@ type DeepSeekTool = {
   };
 };
 
-type DeepSeekResponse = {
-  choices?: Array<{
-    message?: {
-      content?: string;
-      tool_calls?: DeepSeekToolCall[];
-    };
-  }>;
-};
-
+// DeepSeek provider 是可选真实模型模式；默认 mock 仍保证无 Key 可运行。
 export class DeepSeekProvider implements LlmProvider {
   readonly mode = 'llm' as const;
   private readonly apiKey = process.env.DEEPSEEK_API_KEY ?? process.env.DeepSeek_KEY;
@@ -46,6 +39,7 @@ export class DeepSeekProvider implements LlmProvider {
   } as const;
 
   async plan(input: LlmPlanInput): Promise<LlmPlan> {
+    // plan 阶段把历史和工具 schema 发给 DeepSeek，让模型有机会返回 tool_calls。
     const message = await this.chat(
       [
         {
@@ -60,6 +54,7 @@ export class DeepSeekProvider implements LlmProvider {
     );
 
     return {
+      // directReply 用于普通问题；toolIntents 用于工具问题。
       directReply: message.content?.trim(),
       toolIntents: this.toToolIntents(message.tool_calls ?? []),
     };
@@ -67,9 +62,11 @@ export class DeepSeekProvider implements LlmProvider {
 
   async composeReply(input: ComposeReplyInput): Promise<string> {
     if (input.toolCalls.length === 0) {
+      // 没有工具结果时直接返回模型规划阶段生成的普通回复。
       return input.directReply ?? '收到。';
     }
 
+    // 真实模型不直接执行工具，只基于本地工具执行后的事实做总结。
     const toolSummary = input.toolCalls
       .map((toolCall) => {
         const status = toolCall.ok ? '成功' : '失败';
@@ -93,6 +90,7 @@ export class DeepSeekProvider implements LlmProvider {
   }
 
   private toolSchemas(): DeepSeekTool[] {
+    // 工具 schema 与本地 ToolRegistry 保持同名，便于模型 tool_calls 映射。
     return [
       {
         type: 'function',
@@ -104,8 +102,19 @@ export class DeepSeekProvider implements LlmProvider {
             properties: {
               topic: {
                 type: 'string',
-                enum: ['annual_leave', 'expense', 'remote_work', 'it_support'],
-                description: '政策主题。',
+                enum: [
+                  'annual_leave',
+                  'expense',
+                  'remote_work',
+                  'it_support',
+                  'benefits',
+                  'onboarding',
+                  'procurement',
+                  'meeting_room',
+                  'security_compliance',
+                  'overtime',
+                ],
+                description: '内部政策或员工服务主题。',
               },
             },
             required: ['topic'],
@@ -143,10 +152,28 @@ export class DeepSeekProvider implements LlmProvider {
           },
         },
       },
+      {
+        type: 'function',
+        function: {
+          name: 'calculate_expression',
+          description: '安全计算一个只包含数字和 + - * / ( ) 的四则运算表达式。',
+          parameters: {
+            type: 'object',
+            properties: {
+              expression: {
+                type: 'string',
+                description: '待计算表达式，例如 128*7+36。',
+              },
+            },
+            required: ['expression'],
+          },
+        },
+      },
     ];
   }
 
   private toToolIntents(toolCalls: DeepSeekToolCall[]): ToolIntent[] {
+    // 只接收白名单工具名，防止模型返回不存在的工具污染执行链路。
     return toolCalls
       .map((toolCall) => {
         const name = toolCall.function?.name;
@@ -163,10 +190,17 @@ export class DeepSeekProvider implements LlmProvider {
   }
 
   private isToolName(value: unknown): value is ToolName {
-    return value === 'lookup_hr_policy' || value === 'create_todo' || value === 'get_current_time';
+    // 类型守卫把外部模型字符串收窄为本地可执行工具名。
+    return (
+      value === 'lookup_hr_policy' ||
+      value === 'create_todo' ||
+      value === 'get_current_time' ||
+      value === 'calculate_expression'
+    );
   }
 
   private parseArguments(value?: string) {
+    // 模型 arguments 是 JSON 字符串；解析失败时降级为空对象，让工具校验返回错误。
     if (!value) return {};
 
     try {
@@ -178,6 +212,7 @@ export class DeepSeekProvider implements LlmProvider {
   }
 
   private toDeepSeekHistory(history: ChatMessage[]): DeepSeekMessage[] {
+    // 只传最近 12 条 user/assistant 消息，控制请求体大小并过滤非模型角色。
     return history
       .filter((message) => message.role === 'user' || message.role === 'assistant')
       .slice(-12)
@@ -188,38 +223,37 @@ export class DeepSeekProvider implements LlmProvider {
   }
 
   private async complete(messages: DeepSeekMessage[]) {
+    // compose 阶段不再携带工具 schema，只让模型根据事实生成最终答复。
     const message = await this.chat(messages);
-    return message.content?.trim() || 'DeepSeek 没有返回内容。';
+    const content = message.content?.trim();
+    if (!content) {
+      // 空回复视为失败，抛出标准化错误，交给 ChatService 统一包装成稳定响应。
+      throw new Error('LLM provider returned no content');
+    }
+    return content;
   }
 
-  private async chat(messages: DeepSeekMessage[], tools?: DeepSeekTool[]) {
+  private async chat(messages: DeepSeekMessage[], tools?: DeepSeekTool[]): Promise<ChatCompletionMessage> {
+    // 构造函数只在有 Key 时创建 provider；这里保留运行时保护，避免误配置泄漏成空请求。
     if (!this.apiKey) {
       throw new Error('DEEPSEEK_API_KEY or DeepSeek_KEY is required for deepseek mode');
     }
 
+    // 日志只输出 provider/model/endpoint，不输出 API Key，便于录屏证明真实请求。
     console.info(`[llm] provider=deepseek model=${this.model} endpoint=${this.baseUrl}/chat/completions tools=${tools ? 'auto' : 'none'}`);
 
-    const response = await fetch(`${this.baseUrl}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        authorization: `Bearer ${this.apiKey}`,
-        'content-type': 'application/json',
-      },
-      body: JSON.stringify({
+    // 统一走 llm-http：自带超时与错误脱敏，错误信息不含 Key、Authorization 或响应体。
+    return requestChatCompletion({
+      baseUrl: this.baseUrl,
+      apiKey: this.apiKey,
+      body: {
         model: this.model,
         messages,
         ...(tools ? { tools, tool_choice: 'auto' } : {}),
         stream: false,
         thinking: { type: this.thinking },
         temperature: 0.2,
-      }),
+      },
     });
-
-    if (!response.ok) {
-      throw new Error(`DeepSeek request failed: ${response.status} ${await response.text()}`);
-    }
-
-    const data = (await response.json()) as DeepSeekResponse;
-    return data.choices?.[0]?.message ?? {};
   }
 }

@@ -1,22 +1,22 @@
-# Claude Task - Fix Mock MVP Completion Gaps
+# Claude 任务：修复 Mock MVP 完成缺口
 
-## Objective
+## 目标
 
-Fix the remaining gaps found in `docs/development/claude-review-log.md` Review 004 so Prompt 001 can be marked complete.
+修复 `docs/development/claude-review-log.md` 中 评审 004 发现的剩余问题，使 提示词 001 可以判定完成。
 
-The key blocker is that `pnpm dev` starts the web app but the NestJS API fails during dependency injection. The mock business flow works when using the built API, but the take-home requirement and README require reviewers to run the project with `pnpm dev`.
+关键阻塞点是：`pnpm dev` 能启动 Web 应用，但 NestJS API 在依赖注入阶段失败。mock 业务链路在构建后的 API 中可用，但原始笔试题和 README 都要求评审能够通过 `pnpm dev` 本地启动项目。
 
-## Context
+## 上下文
 
-Read these files before editing:
+修改前先阅读：
 
 - `斑头雁全栈开发工程师--开放型笔试题.md`
-- `docs/development/claude-prompts.md` / Prompt 001
-- `docs/development/claude-review-log.md` / Review 004
+- `docs/development/claude-prompts.md` / 提示词 001
+- `docs/development/claude-review-log.md` / 评审 004
 - `docs/development/technical-design.md`
 - `docs/delivery/requirements-traceability.md`
 
-Current relevant files:
+当前相关文件：
 
 - `apps/api/src/chat/chat.service.ts`
 - `apps/api/src/app.module.ts`
@@ -24,76 +24,76 @@ Current relevant files:
 - `apps/api/src/chat/chat.service.spec.ts`
 - `package.json`
 
-## Required Fixes
+## 必须修复的问题
 
-1. Fix API dev startup.
-   - `pnpm dev` currently fails because `tsx watch src/main.ts` does not provide enough runtime metadata for Nest to resolve the first `ChatService` constructor dependency.
-   - Prefer the minimal code fix: add explicit Nest `@Inject(...)` decorators for `InMemorySessionStore`, `ToolRouter`, and `ToolRegistry` in `ChatService`.
-   - Keep the existing `@Inject(LLM_PROVIDER)` for the LLM provider.
-   - Do not change public API shapes.
-   - Do not remove mock mode.
+1. 修复 API 开发模式启动。
+   - 当前 `pnpm dev` 失败，是因为 `tsx watch src/main.ts` 没有为 Nest 提供足够的运行时元数据，导致 `ChatService` 构造函数的第一个依赖无法解析。
+   - 优先使用最小代码改动：在 `ChatService` 中为 `InMemorySessionStore`、`ToolRouter`、`ToolRegistry` 添加显式 Nest `@Inject(...)`。
+   - 保留已有的 `@Inject(LLM_PROVIDER)`。
+   - 不要改变公开 API 结构。
+   - 不要移除 mock 模式。
 
-2. Keep useful tests tracked.
-   - `apps/api/src/tools/tool-registry.spec.ts` exists locally but is untracked.
-   - Include this test file as part of the final diff, unless you replace it with equivalent tracked test coverage.
+2. 保留有价值的测试文件。
+   - `apps/api/src/tools/tool-registry.spec.ts` 本地存在但未纳入 Git 跟踪。
+   - 最终 diff 必须包含该测试文件，除非你用等价的已跟踪测试覆盖替代它。
 
-3. Add missing unit assertions for final replies.
-   - Update `apps/api/src/chat/chat.service.spec.ts` so it asserts that final assistant replies include tool results.
-   - At minimum, assert the HR policy reply contains `年假政策`.
-   - Add todo and time reply assertions if straightforward.
-   - Keep tests deterministic enough to run locally; do not assert exact current timestamps.
+3. 补齐最终回复断言。
+   - 更新 `apps/api/src/chat/chat.service.spec.ts`，断言最终 assistant 回复包含工具结果。
+   - 至少断言 HR 政策回复包含 `年假政策`。
+   - 如果实现简单，也补充待办和时间回复断言。
+   - 测试必须保持确定性；不要断言精确当前时间。
 
-4. Preserve scope boundaries.
-   - Do not add authentication, database persistence, RAG, streaming responses, deployment config, or complex permissions.
-   - Do not add a required real LLM path.
-   - Do not commit `.env` or secrets.
+4. 保持范围边界。
+   - 不要添加登录、数据库持久化、RAG、流式输出、部署配置或复杂权限。
+   - 不要添加必须依赖真实 LLM 的路径。
+   - 不要提交 `.env` 或密钥。
 
-## Acceptance Criteria
+## 验收标准
 
-- `pnpm check` passes.
-- `pnpm dev` starts both frontend and backend without Nest dependency injection errors.
-- With no `.env` file, `POST /api/chat` returns `mode: "mock"`.
-- HTTP smoke cases pass:
+- `pnpm check` 通过。
+- `pnpm dev` 能同时启动前端和后端，不再出现 Nest 依赖注入错误。
+- 没有 `.env` 时，`POST /api/chat` 返回 `mode: "mock"`。
+- HTTP smoke 用例通过：
   - `你好，你能做什么？`
   - `公司年假政策是什么？`
-  - same-session follow-up: `那远程办公时也适用吗？`
+  - 同 session 追问：`那远程办公时也适用吗？`
   - `帮我创建一个待办：明天提交报销`
   - `现在几点？`
-  - blank message returns 400.
-- Unit tests cover:
-  - tool routing,
-  - invalid tool argument handling,
-  - session context,
-  - final assistant replies containing tool results.
-- `git status --short` shows only intentional tracked changes; no useful test file is left as untracked.
+  - 空消息返回 400。
+- 单元测试覆盖：
+  - 工具路由；
+  - 无效工具参数处理；
+  - session 上下文；
+  - 最终 assistant 回复包含工具结果。
+- `git status --short` 只显示有意变更；不能留下未跟踪的有用测试文件。
 
-## Verification Commands
+## 验证命令
 
 ```bash
 pnpm check
 pnpm dev
 ```
 
-Manual HTTP smoke can use the running API at `http://localhost:3000/api/chat`.
+手工 HTTP smoke 可使用运行中的 API：`http://localhost:3000/api/chat`。
 
-## Final Response Requirements
+## 最终回复要求
 
-In your final response, include:
+最终回复请包含：
 
-- Files changed.
-- Whether `pnpm check` passed.
-- Whether `pnpm dev` was verified.
-- Summary of HTTP smoke results.
-- Any remaining limitations.
+- 修改的文件。
+- `pnpm check` 是否通过。
+- `pnpm dev` 是否验证。
+- HTTP smoke 结果摘要。
+- 仍存在的限制。
 
-## Claude Prompt
+## Claude 入口提示词
 
 ```text
-Read AGENTS.md first if it exists. Then read and execute docs/development/claude-mock-mvp-fix-task.md.
+如果仓库中存在 AGENTS.md，请先读取。然后读取并执行 docs/development/claude-mock-mvp-fix-task.md。
 
-Fix the mock MVP completion gaps from Review 004. The priority is to make pnpm dev start both the React frontend and NestJS API without dependency injection errors, while preserving the existing mock-mode behavior and API shape.
+请修复 评审 004 中发现的 mock MVP 完成缺口。优先目标是让 pnpm dev 能同时启动 React 前端和 NestJS API，且没有依赖注入错误，同时保持现有 mock 模式行为和 API 结构。
 
-Do not add auth, database persistence, RAG, streaming, deployment config, complex permissions, or a required real LLM path. Do not commit secrets.
+不要添加登录、数据库持久化、RAG、流式输出、部署配置、复杂权限或必须依赖真实 LLM 的路径。不要提交密钥。
 
-After editing, run pnpm check and verify pnpm dev. Also run the manual API smoke cases listed in the task document. Report changed files, verification results, and any remaining limitations.
+修改完成后运行 pnpm check 并验证 pnpm dev，同时执行任务文档列出的手工 API smoke 用例。最终报告修改文件、验证结果和剩余限制。
 ```
