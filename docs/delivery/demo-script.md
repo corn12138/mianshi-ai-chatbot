@@ -37,6 +37,11 @@ pnpm dev
 
 ## 5. 演示用例
 
+建议录屏时先说明当前模式：
+
+- `Mock Mode`：无 API Key 也能完整跑通核心流程。
+- `LLM Mode`：设置 `LLM_PROVIDER=deepseek` 和本地 DeepSeek Key 后，普通回复和工具结果总结来自真实 DeepSeek API。
+
 普通对话：
 
 ```text
@@ -70,6 +75,18 @@ HR 工具调用：
 ## 6. Mock 模式
 
 说明没有 `.env` 和 API Key 时仍默认 mock 模式运行。
+
+## 6.1 当前第一次 demo 复核
+
+`/Users/huangyuming/Desktop/第一次demo.mov` 时长约 50 秒，画面覆盖了聊天页面、普通对话和工具调用演示，能证明部分核心功能可运行。
+
+但它还不够严格覆盖原始题目的录屏建议，建议补录或重新剪辑加入：
+
+- 需求理解和 MVP 范围说明。
+- AI 工具如何帮助拆解、实现、修正和拒绝过度方案。
+- README 启动命令和无 Key mock 模式说明。
+- 多轮上下文、工具调用、DeepSeek 真实模式分别演示。
+- 当前限制和后续优化方向。
 
 ## 7. 限制和后续优化
 

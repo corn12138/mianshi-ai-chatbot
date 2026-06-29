@@ -177,6 +177,43 @@ node <HTTP smoke script against http://localhost:3000/api/chat and http://localh
 
 因为本轮已通过，不需要再生成下一步修复提示词。后续工作应转向录屏准备、README 最终复核、GitHub 提交链接和视频链接交付。
 
+## Review 006 - DeepSeek Provider 与第一次 Demo 复核
+
+- 日期：2026-06-29
+- 对应来源：原始笔试 MD、DeepSeek 官方 API 文档、本地录屏 `/Users/huangyuming/Desktop/第一次demo.mov`
+- 评审结论：DeepSeek 真实 API 接入通过；第一次 demo 功能演示可用但表达不够完整，建议补录。
+
+### 验收矩阵
+
+| 要求 | 状态 | 证据 | 备注 |
+| --- | --- | --- | --- |
+| mock 默认无 Key 可运行 | Pass | `pnpm check`、mock smoke 既有记录 | 保留默认 mock |
+| DeepSeek 真实模式 | Pass | `LLM_PROVIDER=deepseek` + 本地 `.env` Key，HTTP smoke 返回 `mode: "llm"` | Key 未输出、未提交 |
+| 普通真实 AI 回复 | Pass | `你好，你能做什么？` 返回 DeepSeek 生成回复 |  |
+| 工具结果由真实模型总结 | Pass | 年假、远程、待办、时间工具 smoke 均返回 `mode: "llm"` 且包含工具结果 | 工具触发仍由本地路由 |
+| 录屏功能演示 | Partial | 抽帧显示页面和工具调用演示 | 约 50 秒，主要是产品操作 |
+| 录屏展示 AI 工具使用深度 | Partial | 视频画面未体现需求拆解、AI 提问、采纳/修改/拒绝过程 | 建议补录讲解段 |
+
+### 验证命令
+
+```bash
+ffprobe -v error -show_entries format=duration:stream=codec_type,width,height,avg_frame_rate -of default=noprint_wrappers=1 /Users/huangyuming/Desktop/第一次demo.mov
+pnpm check
+LLM_PROVIDER=deepseek pnpm --filter @mianshi/api dev
+node <HTTP smoke script against POST /api/chat>
+```
+
+### DeepSeek Smoke 结果
+
+| Case | Result |
+| --- | --- |
+| 普通对话 | 201, `mode: llm`, 有自然语言回复 |
+| 年假政策工具 | 201, `lookup_hr_policy`, 回复包含年假信息 |
+| 多轮追问 | 201, same session, 回复包含远程办公信息 |
+| 创建待办 | 201, `create_todo`, 回复包含待办/报销信息 |
+| 查询时间 | 201, `get_current_time`, 回复包含时间信息 |
+| 空消息 | 400, `message is required` |
+
 ## 正式评审模板
 
 ````md

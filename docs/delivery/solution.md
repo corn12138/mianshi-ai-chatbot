@@ -14,7 +14,7 @@
 
 - 前端：负责聊天页面、会话 ID 保存、消息展示、工具调用结果展示。
 - 后端：负责接口、上下文管理、模型 provider、工具路由和工具执行。
-- 模型层：默认 mock provider，可选 OpenAI-compatible provider。
+- 模型层：默认 mock provider，可选 DeepSeek provider 或 OpenAI-compatible provider。
 - 工具层：注册 HR/IT 查询、待办创建、时间查询。
 - 存储层：第一版使用内存 Map 保存会话上下文。
 
@@ -31,6 +31,17 @@
 - 写入 assistant 消息的 `toolCalls`。
 - 拼入最终自然语言回复。
 - 返回给前端用于展示。
+
+## DeepSeek 真实 API 增强
+
+第一版已经保留无 Key 可运行的 mock 模式，同时支持可选 DeepSeek 真实模型模式：
+
+- 设置 `LLM_PROVIDER=deepseek`。
+- 在本地 `.env` 中配置 `DEEPSEEK_API_KEY` 或 `DeepSeek_KEY`。
+- 后端会调用 DeepSeek `/chat/completions` 生成普通回复和工具结果总结。
+- 工具调用仍由本地 `ToolRouter` 触发，避免真实模型输出不稳定影响核心演示。
+
+这个设计既满足题目要求的 mock 模式，也能展示真实 LLM API 接入能力。
 
 ## 取舍
 

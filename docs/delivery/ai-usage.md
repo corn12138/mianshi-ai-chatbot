@@ -18,13 +18,16 @@
 - 采用 mock provider 默认启用，因为题目明确要求无 API Key 也能体验核心流程。
 - 采用 HR/IT + 待办 + 时间工具，因为它们既贴近内部员工场景，又容易稳定演示。
 - 采用 pnpm workspace 管理 monorepo，减少 npm workspaces 与后续工具链不一致的问题。
+- 采用 DeepSeek 作为可选真实 LLM provider，同时保留 mock 默认模式，兼顾演示上限和无 Key 可运行要求。
 
 ## 修改的 AI 输出
 
 - 没有直接做复杂 agent 框架，而是收敛为 provider + router + registry 三层，降低实现和评审启动成本。
 - 没有把工具调用放到前端按钮，改为后端自动判断，满足题目要求。
+- DeepSeek 接入没有强行改成复杂 Agent 编排，而是保留本地工具路由，让真实模型负责普通回答和工具结果总结。
 
 ## 拒绝的 AI 输出
 
 - 拒绝第一版加入登录、数据库、RAG、流式输出和多工具复杂编排，因为这些会削弱 MVP 的清晰度。
 - 拒绝提交真实 API Key，真实模型模式仅通过 `.env.example` 说明。
+- 拒绝把 DeepSeek 的 FIM、KV cache、Anthropic API 兼容等能力放入第一版，因为它们不服务于当前内部员工 Chatbot 的核心验收流程。

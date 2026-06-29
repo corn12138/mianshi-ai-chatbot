@@ -9,7 +9,7 @@
 - 前端：React + Vite + TypeScript。
 - 后端：NestJS + TypeScript，运行在 Fastify 适配器上。
 - 单仓库：pnpm workspace。
-- 模型层：默认 `MockLlmProvider`，可选 `OpenAICompatibleProvider`。
+- 模型层：默认 `MockLlmProvider`，可选 `DeepSeekProvider` 或 `OpenAICompatibleProvider`。
 - 存储层：内存 session store。
 
 ## 模块关系
@@ -85,15 +85,26 @@ Content-Type: application/json
 
 无 `.env` 或 `LLM_PROVIDER=mock` 时默认启用 mock 模式。mock provider 不依赖外部服务，因此评审可直接本地启动并体验完整核心流程。
 
+## DeepSeek 真实模型模式
+
+当 `LLM_PROVIDER=deepseek` 且存在 `DEEPSEEK_API_KEY` 或 `DeepSeek_KEY` 时，后端启用 `DeepSeekProvider`，调用 DeepSeek OpenAI-compatible `/chat/completions` 接口生成普通回复和工具结果总结。
+
+实现取舍：
+
+- 多轮对话由本地 session history 拼接后传给 DeepSeek，因为 DeepSeek Chat API 本身是无状态请求。
+- 工具触发仍由本地 `ToolRouter` 稳定判断，确保 HR/IT、待办、时间工具在演示中可控。
+- DeepSeek 负责普通自然语言回复，以及在工具执行后将工具结果总结成最终回答。
+- 默认仍保留 mock 模式，避免评审没有真实 API Key 时无法启动核心流程。
+
 ## 真模型模式
 
-当 `LLM_PROVIDER=openai-compatible` 且存在 `OPENAI_API_KEY` 时启用 OpenAI-compatible provider。当前真模型模式保留为可选扩展，不影响 MVP 验收。
+当 `LLM_PROVIDER=openai-compatible` 且存在 `OPENAI_API_KEY` 时启用通用 OpenAI-compatible provider。真实模型模式保留为可选增强，不影响 mock MVP 验收。
 
 ## 边界和限制
 
 - 内存 session 重启后丢失。
 - 工具路由以演示级规则为主。
-- 真模型模式未实现完整 function calling 协议。
+- DeepSeek 模式当前没有使用原生 Tool Calls，而是采用“本地工具路由 + DeepSeek 总结工具结果”的稳妥 MVP 方案。
 - 未实现登录、权限、数据库、RAG、流式输出和线上部署。
 
 这些限制是有意取舍，目的是优先保证开放题要求的核心流程清晰、稳定、可解释。

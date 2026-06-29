@@ -33,6 +33,11 @@ cp .env.example .env
 - `OPENAI_API_KEY`：真实模型模式所需，禁止提交真实值。
 - `OPENAI_BASE_URL`：OpenAI-compatible 服务地址。
 - `OPENAI_MODEL`：模型名。
+- `LLM_PROVIDER=deepseek`：可选 DeepSeek 真实模型模式。
+- `DEEPSEEK_API_KEY` / `DeepSeek_KEY`：DeepSeek API Key，二选一，禁止提交真实值。
+- `DEEPSEEK_BASE_URL`：DeepSeek OpenAI-compatible 地址，默认 `https://api.deepseek.com`。
+- `DEEPSEEK_MODEL`：DeepSeek 模型，默认 `deepseek-v4-flash`。
+- `DEEPSEEK_THINKING`：DeepSeek 思考模式开关，默认 `disabled`，可按需设为 `enabled`。
 - `VITE_API_BASE_URL`：前端访问后端的地址。
 
 ## MVP 范围
@@ -44,6 +49,7 @@ cp .env.example .env
 - 基于内存的多轮会话上下文。
 - 默认 mock LLM provider。
 - 可选 OpenAI-compatible provider。
+- 可选 DeepSeek provider，使用真实 DeepSeek `/chat/completions` API 生成普通回复和工具结果总结。
 - 本地工具注册、路由、执行和结果回填。
 - HR/IT 政策查询、创建待办、查询当前时间三个工具。
 
@@ -80,6 +86,8 @@ Web Chat UI
 - “现在几点？” -> `get_current_time`
 
 工具结果会进入 `reply`，并同时通过 `toolCalls` 返回给前端展示。
+
+在 DeepSeek 模式下，本地 `ToolRouter` 仍负责稳定触发工具；DeepSeek 负责普通自然语言回复，以及把工具执行结果总结成最终回答。
 
 ## 验证
 

@@ -14,6 +14,7 @@
 | 工具调用结果进入最终回复 | 已实现 | `apps/api/src/llm/mock-llm.provider.ts`、`docs/development/technical-design.md` |
 | 无真实 API Key 也能体验 mock 模式 | 已实现 | `.env.example`、`README.md` |
 | README 可指导本地启动 | 已实现 | `README.md` |
+| 可选真实 LLM API 接入 | 已实现，非原始必选项 | `apps/api/src/llm/deepseek.provider.ts`、`docs/development/technical-design.md` |
 
 ## README 或方案说明要求追踪
 
