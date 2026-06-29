@@ -5,6 +5,13 @@
 - Codex：阅读题目、拆解 MVP、设计技术方案和目录结构。
 - Claude：计划用于落代码实现、补充测试、修复编译问题和完善 README。
 
+## 过程记录规则
+
+- 技术方案统一记录在 `docs/technical-design.md`。
+- 每次准备发给 Claude 的提示词都追加到 `docs/claude-prompts.md`。
+- 每次 Claude 完成后的人工评审都追加到 `docs/claude-review-log.md`。
+- 题目要求与交付文档的覆盖关系维护在 `docs/requirements-traceability.md`。
+
 ## 采纳的 AI 输出
 
 - 采用前后端分离的 React + NestJS 单仓库方案，因为它能清楚展示全栈边界。

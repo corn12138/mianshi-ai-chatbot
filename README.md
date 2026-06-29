@@ -107,3 +107,13 @@ npm run test
 ## AI 工具使用
 
 详见 [docs/ai-usage.md](docs/ai-usage.md)。
+
+## 文档索引
+
+- [需求与交付文档追踪表](docs/requirements-traceability.md)
+- [技术设计文档](docs/technical-design.md)
+- [方案说明](docs/solution.md)
+- [AI 工具使用记录](docs/ai-usage.md)
+- [Claude 提示词记录](docs/claude-prompts.md)
+- [Claude 评审记录](docs/claude-review-log.md)
+- [录屏脚本](docs/demo-script.md)
