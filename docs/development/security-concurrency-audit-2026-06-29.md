@@ -22,7 +22,7 @@
 | LLM 错误脱敏 | 已具备 | 非 2xx 只暴露状态码，网络错误转成通用错误 |
 | provider 失败稳定语义 | 已具备 | `apps/api/src/chat/chat.service.ts` 将 provider 错误转成 503，失败轮次不写入历史 |
 | 工具执行白名单 | 已具备 | `apps/api/src/tools/tool-registry.ts` 只注册固定工具 |
-| 工具参数基础校验 | 已具备 | `todo.tool.ts`、`hr-policy.tool.ts`、`time.tool.ts` 进行运行时校验 |
+| 工具参数基础校验 | 已具备 | `todo.tool.ts`、`hr-policy.tool.ts`、`time.tool.ts`、`calculator.tool.ts` 进行运行时校验，`ToolRegistry` 归一异常参数 |
 | 前端重复点击保护 | 已具备 | `apps/web/src/main.tsx` 使用 `isSending` 禁用发送按钮 |
 | 请求 DTO 运行时校验 | 已具备基础版 | `apps/api/src/chat/dto.ts` |
 | 可选 Bearer token | 已具备接入口 | `apps/api/src/security/request-security.service.ts` |
@@ -159,11 +159,12 @@ git diff --check
 
 结果：
 
-- 10 个 API 测试文件通过。
-- 38 个测试通过。
+- 14 个 API 测试文件通过。
+- 56 个测试通过。
 - 前后端 build 通过。
 - `git diff --check` 通过。
 - HTTP 冒烟通过：mock 模式下待办工具调用正常进入最终回复。
+- HTTP 冒烟通过：mock 模式下 `二加三`、`2(3+4)`、`百分之五十 * 200`、`下周五同步项目风险`、`纽约现在几点？`、`VPN 登不上怎么办？` 均能触发对应工具。
 - HTTP 冒烟通过：非法 `sessionId` 返回统一 `{ code, message, requestId }` 错误结构。
 - 本机当前 `.env` 启用 DeepSeek 时，真实模型链路也已冒烟通过，响应未泄漏 API Key。
-- 当前测试覆盖业务 MVP、工具路由、provider 错误脱敏、mock 兜底、DTO 校验、限流、可选认证、session TTL/裁剪、LLM 并发闸门。
+- 当前测试覆盖业务 MVP、工具路由、工具参数边界、provider 错误脱敏、mock 兜底、DTO 校验、限流、可选认证、session TTL/裁剪、LLM 并发闸门。

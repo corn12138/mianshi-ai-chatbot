@@ -26,7 +26,7 @@ export class ToolRegistry {
     },
     calculate_expression: {
       name: 'calculate_expression',
-      description: '安全计算四则运算表达式',
+      description: '安全计算受控数学表达式',
       execute: calculateExpression,
     },
   };
@@ -42,20 +42,31 @@ export class ToolRegistry {
       };
     }
 
+    const args = this.normalizeArguments(intent.arguments);
+
     try {
       // 每个工具内部负责参数校验；Registry 只统一包装成功/失败结构。
       return {
         ...intent,
+        arguments: args,
         ok: true,
-        result: await tool.execute(intent.arguments),
+        result: await tool.execute(args),
       };
     } catch (error) {
       // 工具失败也属于可展示结果，保证单个工具错误不打断聊天主流程。
       return {
         ...intent,
+        arguments: args,
         ok: false,
         result: error instanceof Error ? error.message : 'Tool execution failed',
       };
     }
+  }
+
+  private normalizeArguments(args: unknown) {
+    if (!args || typeof args !== 'object' || Array.isArray(args)) {
+      return {};
+    }
+    return args as Record<string, unknown>;
   }
 }

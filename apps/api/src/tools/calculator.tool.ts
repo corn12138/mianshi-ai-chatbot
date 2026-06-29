@@ -1,4 +1,9 @@
-// 安全计算工具只解析四则运算，不使用 eval / Function，避免把用户输入当代码执行。
+import { normalizeMathExpressionText } from './math-expression';
+
+const MAX_EXPRESSION_LENGTH = 120;
+const MAX_ABS_RESULT = 1_000_000_000_000_000;
+
+// 安全计算工具只解析受控数学表达式，不使用 eval / Function，避免把用户输入当代码执行。
 export async function calculateExpression(args: Record<string, unknown>) {
   const expression = args.expression;
   if (typeof expression !== 'string' || !expression.trim()) {
@@ -6,12 +11,12 @@ export async function calculateExpression(args: Record<string, unknown>) {
   }
 
   const normalized = normalizeExpression(expression);
-  if (normalized.length > 80) {
-    throw new Error('expression must be at most 80 characters');
+  if (normalized.length > MAX_EXPRESSION_LENGTH) {
+    throw new Error(`expression must be at most ${MAX_EXPRESSION_LENGTH} characters`);
   }
 
-  if (!/^[0-9+\-*/().\s]+$/.test(normalized)) {
-    throw new Error('expression may only contain numbers and + - * / ( )');
+  if (!/^[0-9+\-*/^%().\s]+$/.test(normalized)) {
+    throw new Error('expression may only contain numbers and supported operators');
   }
 
   const parser = new ArithmeticParser(normalized);
@@ -21,13 +26,7 @@ export async function calculateExpression(args: Record<string, unknown>) {
 }
 
 function normalizeExpression(expression: string) {
-  return expression
-    .replace(/[０-９]/g, (char) => String(char.charCodeAt(0) - '０'.charCodeAt(0)))
-    .replace(/×/g, '*')
-    .replace(/÷/g, '/')
-    .replace(/（/g, '(')
-    .replace(/）/g, ')')
-    .trim();
+  return normalizeMathExpressionText(expression);
 }
 
 class ArithmeticParser {
@@ -41,6 +40,7 @@ class ArithmeticParser {
     if (this.index !== this.input.length) {
       throw new Error('expression contains invalid syntax');
     }
+    this.ensureSafeNumber(value);
     return value;
   }
 
@@ -50,9 +50,9 @@ class ArithmeticParser {
     while (true) {
       this.skipSpaces();
       if (this.consume('+')) {
-        value += this.parseTerm();
+        value = this.ensureSafeNumber(value + this.parseTerm());
       } else if (this.consume('-')) {
-        value -= this.parseTerm();
+        value = this.ensureSafeNumber(value - this.parseTerm());
       } else {
         return value;
       }
@@ -60,21 +60,41 @@ class ArithmeticParser {
   }
 
   private parseTerm(): number {
-    let value = this.parseFactor();
+    let value = this.parsePower();
 
     while (true) {
       this.skipSpaces();
       if (this.consume('*')) {
-        value *= this.parseFactor();
+        value = this.ensureSafeNumber(value * this.parsePower());
       } else if (this.consume('/')) {
-        const divisor = this.parseFactor();
+        const divisor = this.parsePower();
         if (divisor === 0) {
           throw new Error('division by zero is not allowed');
         }
-        value /= divisor;
+        value = this.ensureSafeNumber(value / divisor);
       } else {
         return value;
       }
+    }
+  }
+
+  private parsePower(): number {
+    let value = this.parsePostfix();
+    this.skipSpaces();
+
+    if (this.consumeText('**') || this.consume('^')) {
+      value = this.ensureSafeNumber(value ** this.parsePower());
+    }
+
+    return value;
+  }
+
+  private parsePostfix(): number {
+    let value = this.parseFactor();
+    while (true) {
+      this.skipSpaces();
+      if (!this.consume('%')) return value;
+      value = this.ensureSafeNumber(value / 100);
     }
   }
 
@@ -105,7 +125,7 @@ class ArithmeticParser {
     }
 
     const raw = this.input.slice(start, this.index);
-    if (!raw || raw.split('.').length > 2) {
+    if (!raw || !/[0-9]/.test(raw) || raw.split('.').length > 2) {
       throw new Error('expression contains invalid number');
     }
 
@@ -117,6 +137,14 @@ class ArithmeticParser {
     return value;
   }
 
+  private consumeText(text: string) {
+    if (!this.input.startsWith(text, this.index)) {
+      return false;
+    }
+    this.index += text.length;
+    return true;
+  }
+
   private consume(char: string) {
     if (this.input[this.index] !== char) {
       return false;
@@ -126,8 +154,18 @@ class ArithmeticParser {
   }
 
   private skipSpaces() {
-    while (this.input[this.index] === ' ') {
+    while (this.index < this.input.length && /\s/.test(this.input[this.index] ?? '')) {
       this.index += 1;
     }
+  }
+
+  private ensureSafeNumber(value: number) {
+    if (!Number.isFinite(value)) {
+      throw new Error('expression result is not finite');
+    }
+    if (Math.abs(value) > MAX_ABS_RESULT) {
+      throw new Error('expression result is too large');
+    }
+    return value;
   }
 }

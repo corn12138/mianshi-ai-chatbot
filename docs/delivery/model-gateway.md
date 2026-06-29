@@ -37,6 +37,7 @@ OpenAI-compatible 模式覆盖：OpenAI 官方、第三方中转站（One API、
 - 在 `plan` 阶段把对话历史和工具 schema 一起发给模型，模型可返回 `tool_calls`。
 - 工具仍由本地 `ToolRegistry` 执行；模型只负责普通回复和工具结果总结。
 - 本地 `ToolRouter` 始终兜底，保证模型未稳定触发工具时演示依然可控。
+- DeepSeek tool schema 已同步工具边界：政策工具可传受控 `topic` 或自然语言 `query`，计算工具说明支持 `+ - * / ** ^ %`、括号、中文乘除加减和次方说法。
 
 ```bash
 LLM_PROVIDER=deepseek
@@ -98,6 +99,7 @@ OPENAI_API_KEY=replace-with-your-key
 - 工具触发统一由后端完成，前端示例按钮只负责填充演示问题，不参与工具选择。
 - DeepSeek 模式下，模型可通过 `tool_calls` 参与工具规划，本地 `ToolRouter` 仍兜底。
 - 通用 OpenAI-compatible 模式默认不发送 tools schema，工具触发完全交给本地 `ToolRouter`，以保证不同网关下演示链路稳定一致。
+- 本地 `ToolRouter` 和 `ToolRegistry` 已补常见边界：政策别名、自然语言待办、时区别名、中文/全角/百分比/次方类计算输入，以及异常工具参数归一化。
 - 下一步可为通用网关增加可选的 tools schema 支持，但当前优先保证稳定可解释，而不是覆盖所有网关的 function calling 差异。
 
 ## 安全边界

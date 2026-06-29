@@ -87,15 +87,24 @@ Content-Type: application/json
 - `lookup_hr_policy`：查询 mock 员工服务知识，覆盖年假、报销、远程办公、IT 支持、福利、入职、采购、会议室、安全合规、加班调休。
 - `create_todo`：创建 mock 待办。
 - `get_current_time`：查询当前时间。
-- `calculate_expression`：安全计算四则运算表达式，不使用 `eval` 或 `Function`。
+- `calculate_expression`：安全计算受控数学表达式，不使用 `eval` 或 `Function`。
 
 工具调用不能依赖前端按钮。前端示例按钮只是演示入口，真正的判断在后端 `ToolRouter`。
+
+本轮工具边界补强：
+
+- `math-expression.ts` 统一处理数学输入归一化，覆盖全角数字/符号、中文数字、中文乘除加减、次方/平方、百分比、千分位和隐式乘法。
+- `ToolRouter` 不只匹配固定按钮文案，也识别自然语言计算、待办、时间和政策问题，例如 `二加三`、`2(3+4)`、`提醒我后天提交报销`、`纽约现在几点`、`VPN 登不上怎么办`。
+- `lookup_hr_policy` 支持受控 `topic` 和自然语言 `query`，未知 query 返回可查询目录，不直接制造未捕获错误。
+- `create_todo` 会清理标题、拆分截止时间并限制标题/日期长度。
+- `get_current_time` 会把常见城市或时区别名归一到 IANA timezone，并对非法 timezone 返回稳定错误。
+- `ToolRegistry` 对模型或中转站传来的异常参数做对象归一，确保工具失败以结构化 `toolCalls` 返回。
 
 ## Mock 模式
 
 无 `.env` 或 `LLM_PROVIDER=mock` 时默认启用 mock 模式。mock provider 不依赖外部服务，因此评审可直接本地启动并体验完整核心流程。
 
-mock 覆盖面有意比最低要求更宽：普通自我介绍和能力说明由 `MockLlmProvider` 直接生成；员工服务、待办、时间和计算问题由 `ToolRouter` 稳定触发本地工具。这样即使没有真实 LLM Key，录屏也能展示更接近内部员工助手的使用广度。
+mock 覆盖面有意比最低要求更宽：普通自我介绍和能力说明由 `MockLlmProvider` 直接生成；员工服务、待办、时间和计算问题由 `ToolRouter` 稳定触发本地工具。工具输入也覆盖常见非模板写法，例如中文数字计算、百分比、外地时间、自然语言待办和 IT/办公政策别名。这样即使没有真实 LLM Key，录屏也能展示更接近内部员工助手的使用广度。
 
 ## DeepSeek 真实模型模式
 
@@ -105,6 +114,7 @@ mock 覆盖面有意比最低要求更宽：普通自我介绍和能力说明由
 
 - 多轮对话由本地 session history 拼接后传给 DeepSeek，因为 DeepSeek Chat API 本身是无状态请求。
 - 工具触发仍由本地 `ToolRouter` 稳定判断，确保员工服务查询、待办、时间、计算工具在演示中可控。
+- DeepSeek 的 tool schema 同步支持政策 `query` 和更宽的计算表达式说明，模型直接规划工具时也能理解这些边界。
 - DeepSeek 负责普通自然语言回复，以及在工具执行后将工具结果总结成最终回答。
 - 默认仍保留 mock 模式，避免评审没有真实 API Key 时无法启动核心流程。
 
@@ -152,7 +162,7 @@ mock 覆盖面有意比最低要求更宽：普通自我介绍和能力说明由
 ## 边界和限制
 
 - 内存 session 重启后丢失。
-- 工具路由以演示级规则为主。
+- 工具路由仍是演示级规则，但已覆盖常见自然语言别名和工具参数边界；生产阶段可替换为更完整的意图分类或 function calling 策略。
 - DeepSeek 模式支持将工具 schema 交给模型规划，同时保留本地 `ToolRouter` 兜底，避免模型没有稳定触发工具时影响 MVP 演示。
 - 未实现完整登录、复杂权限、数据库、分布式限流、RAG、流式输出和线上部署。
 

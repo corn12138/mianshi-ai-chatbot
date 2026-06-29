@@ -104,7 +104,8 @@ describe('ChatService', () => {
 
     expect(response.toolCalls[0]?.name).toBe('create_todo');
     expect(response.reply).toContain('已创建待办');
-    expect(response.reply).toContain('明天提交报销');
+    expect(response.reply).toContain('提交报销');
+    expect(response.reply).toContain('截止时间：明天');
   });
 
   it('includes the current-time tool result in the final assistant reply', async () => {
@@ -135,6 +136,23 @@ describe('ChatService', () => {
 
     expect(response.toolCalls[0]?.name).toBe('calculate_expression');
     expect(response.reply).toContain('128*7+36 = 932');
+
+    const powerResponse = await service.chat({ message: '计算 2**3+2' });
+    expect(powerResponse.toolCalls[0]?.name).toBe('calculate_expression');
+    expect(powerResponse.reply).toContain('2**3+2 = 10');
+  });
+
+  it('keeps broad mock routing natural in final replies', async () => {
+    const service = createService();
+
+    const reminder = await service.chat({ message: '提醒我后天提交报销' });
+    expect(reminder.toolCalls[0]?.name).toBe('create_todo');
+    expect(reminder.reply).toContain('提交报销');
+    expect(reminder.reply).toContain('截止时间：后天');
+
+    const timezone = await service.chat({ message: '纽约现在几点？' });
+    expect(timezone.toolCalls[0]?.name).toBe('get_current_time');
+    expect(timezone.reply).toContain('America/New_York');
   });
 
   it('rejects blank messages', async () => {

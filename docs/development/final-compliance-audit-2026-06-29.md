@@ -15,7 +15,7 @@
 - 后端集中负责上下文、模型 provider、工具路由、工具执行和错误处理。
 - 工具调用不是按钮硬编码触发，而是由后端 `ToolRouter` 和模型工具意图共同决定。
 - 工具结果进入最终 assistant 回复，并通过 `toolCalls` 结构化返回。
-- mock 覆盖不止最低要求，覆盖员工政策、福利、入职、采购、会议室、安全合规、待办、时间、计算等场景。
+- mock 覆盖不止最低要求，覆盖员工政策、福利、入职、采购、会议室、安全合规、待办、时间、计算等场景，并支持常见非模板输入。
 - 支持 DeepSeek 和 OpenAI-compatible provider，可接第三方中转站和内部网关。
 - 增加了请求校验、错误脱敏、LLM 超时、限流、LLM 并发闸门、session TTL/容量控制等工程化加分项。
 - README、方案说明、技术设计、AI 使用记录、录屏脚本、需求追踪表齐全。
@@ -40,9 +40,9 @@
 | 简单可用聊天页面 | 通过 | React + Vite 页面，支持示例问题、输入、发送、loading、错误展示 |
 | 发送消息的后端接口 | 通过 | `POST /api/chat` |
 | 基础会话上下文管理 | 通过 | 内存 session store，含 TTL、容量和历史裁剪 |
-| 本地 mock LLM / mock provider | 高标准通过 | deterministic `MockLlmProvider`，覆盖更多内部员工问题 |
+| 本地 mock LLM / mock provider | 高标准通过 | deterministic `MockLlmProvider`，覆盖更多内部员工问题和非模板工具输入 |
 | 本地工具 | 高标准通过 | `lookup_hr_policy`、`create_todo`、`get_current_time`、`calculate_expression` |
-| 工具参数校验和失败处理 | 通过 | 各工具做运行时校验，`ToolRegistry` 捕获失败并结构化返回 |
+| 工具参数校验和失败处理 | 高标准通过 | 各工具做运行时校验；`ToolRegistry` 归一异常参数、捕获失败并结构化返回 |
 | README 启动说明 | 通过 | README 启动、环境变量、mock、工具、验证说明齐全 |
 
 ## 文档要求符合性
@@ -68,6 +68,7 @@
 
 - 多 provider：`MockLlmProvider`、`DeepSeekProvider`、`OpenAICompatibleProvider`。
 - 中转站/内部网关：`OPENAI_BASE_URL` + `OPENAI_PROVIDER_LABEL` 支持 OpenAI-compatible 网关。
+- mock 工具边界：政策 query 别名、自然语言待办、时区别名、中文数字/百分比/次方/隐式乘法等计算输入。
 - LLM 超时：`LLM_REQUEST_TIMEOUT_MS`，默认 15 秒。
 - 错误脱敏：不回传 API Key、Authorization 或上游响应体。
 - 可选 mock 兜底：`LLM_FALLBACK_TO_MOCK=true`。
@@ -94,7 +95,7 @@ LLM_PROVIDER=mock PORT=3103 pnpm --filter @mianshi/api dev
 
 结果：
 
-- `pnpm test` 通过：11 个测试文件，45 个测试。
+- `pnpm test` 通过：14 个测试文件，56 个测试。
 - `pnpm build` 通过：API 和 Web 均构建成功。
 - `git diff --check` 通过。
 - 敏感信息扫描无真实密钥；仅命中 `.env.example`/文档占位符和测试假 token。
@@ -103,7 +104,10 @@ LLM_PROVIDER=mock PORT=3103 pnpm --filter @mianshi/api dev
   - `公司年假政策是什么？`：触发 `lookup_hr_policy`。
   - 同一 session 追问 `那远程办公时也适用吗？`：保留上下文并返回 4 条历史消息。
   - `计算 128*7+36`：触发 `calculate_expression`，结果为 932。
-  - `帮我创建一个待办：明天提交报销`：触发 `create_todo`。
+  - `二加三`、`2(3+4)`、`百分之五十 * 200`：触发 `calculate_expression` 并正确归一计算。
+  - `帮我创建一个待办：明天提交报销`、`下周五同步项目风险`：触发 `create_todo`，并拆分标题与截止时间。
+  - `纽约现在几点？`：触发 `get_current_time`，时区归一为 `America/New_York`。
+  - `VPN 登不上怎么办？`：触发 `lookup_hr_policy`，命中 IT 支持政策。
   - 非法 `sessionId`：返回统一 `BAD_REQUEST` 错误结构。
 
 ## 剩余风险

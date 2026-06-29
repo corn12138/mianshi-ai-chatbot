@@ -96,7 +96,7 @@ export class DeepSeekProvider implements LlmProvider {
         type: 'function',
         function: {
           name: 'lookup_hr_policy',
-          description: '查询 mock HR/IT 内部政策。',
+          description: '查询 mock HR/IT/行政/安全内部政策，优先传受控 topic；不确定时可传 query。',
           parameters: {
             type: 'object',
             properties: {
@@ -116,8 +116,12 @@ export class DeepSeekProvider implements LlmProvider {
                 ],
                 description: '内部政策或员工服务主题。',
               },
+              query: {
+                type: 'string',
+                description: '自然语言查询文本，例如“在家办公怎么申请”。',
+              },
             },
-            required: ['topic'],
+            required: [],
           },
         },
       },
@@ -156,7 +160,7 @@ export class DeepSeekProvider implements LlmProvider {
         type: 'function',
         function: {
           name: 'calculate_expression',
-          description: '安全计算一个只包含数字和 + - * / ( ) 的四则运算表达式。',
+          description: '安全计算受控数学表达式，支持 + - * / ** ^ % 括号、中文乘除加减和次方说法。',
           parameters: {
             type: 'object',
             properties: {

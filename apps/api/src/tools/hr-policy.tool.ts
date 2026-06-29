@@ -23,13 +23,43 @@ const policies = {
 
 type PolicyTopic = keyof typeof policies;
 
+const topicAliases: Record<PolicyTopic, string[]> = {
+  annual_leave: ['annual_leave', '年假', '年休', '休假', '假期', '请假', 'annual leave', 'leave policy'],
+  expense: ['expense', '报销', '报账', '发票', '费用', '差旅', '垫付', 'reimburse', 'reimbursement'],
+  remote_work: ['remote_work', '远程', '居家', '在家办公', '远程办公', 'remote', 'wfh', 'work from home'],
+  it_support: ['it_support', 'vpn', '邮箱', '电脑', 'it', '账号', '密码', '网络', '设备', '登录', 'service desk'],
+  benefits: ['benefits', '福利', '五险', '社保', '公积金', '体检', '商业保险', 'benefit'],
+  onboarding: ['onboarding', '入职', '新人', '新员工', '试用期', '转正', '导师'],
+  procurement: ['procurement', '采购', '设备申请', '办公用品', '软件订阅', '供应商', 'purchase'],
+  meeting_room: ['meeting_room', '会议室', '访客', '会议预订', '预约会议', '日历', 'meeting room', 'visitor'],
+  security_compliance: ['security_compliance', '安全', '合规', '客户数据', '源代码', '脱敏', '保密', '权限', 'security'],
+  overtime: ['overtime', '加班', '调休', '补休', '考勤'],
+};
+
 export async function lookupHrPolicy(args: Record<string, unknown>) {
-  // topic 必须来自受控枚举，避免 mock 业务查询返回不可预期内容。
-  const topic = args.topic;
-  if (typeof topic !== 'string' || !(topic in policies)) {
-    throw new Error(`topic must be one of: ${Object.keys(policies).join(', ')}`);
+  // topic 来自受控枚举时直接查询；query 来自自然语言时先做别名归一。
+  const topic = typeof args.topic === 'string' ? args.topic.trim() : undefined;
+  const query = typeof args.query === 'string' ? args.query.trim() : undefined;
+  const normalizedTopic = resolvePolicyTopic(topic || query);
+
+  if (normalizedTopic) {
+    return policies[normalizedTopic];
   }
 
-  // 当前 MVP 用静态数据模拟内部 HR/IT/行政/安全信息源。
-  return policies[topic as PolicyTopic];
+  if (query) {
+    return `暂未找到“${query}”的精确 mock 政策。当前可查询主题：${Object.keys(policies).join(', ')}。`;
+  }
+
+  throw new Error(`topic must be one of: ${Object.keys(policies).join(', ')}`);
+}
+
+function resolvePolicyTopic(raw: string | undefined): PolicyTopic | undefined {
+  if (!raw) return undefined;
+
+  const text = raw.toLowerCase();
+  if (text in policies) return text as PolicyTopic;
+
+  return (Object.entries(topicAliases) as Array<[PolicyTopic, string[]]>).find(([, aliases]) =>
+    aliases.some((alias) => text.includes(alias.toLowerCase())),
+  )?.[0];
 }

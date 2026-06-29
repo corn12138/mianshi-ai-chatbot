@@ -56,4 +56,15 @@ describe('ToolRegistry', () => {
     expect(record.ok).toBe(false);
     expect(record.result).toContain('Unknown tool');
   });
+
+  it('normalizes malformed tool arguments before execution', async () => {
+    const record = await registry.execute({
+      name: 'create_todo',
+      arguments: ['not', 'an', 'object'] as unknown as Record<string, unknown>,
+    });
+
+    expect(record.arguments).toEqual({});
+    expect(record.ok).toBe(false);
+    expect(record.result).toBe('title is required');
+  });
 });
