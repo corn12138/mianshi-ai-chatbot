@@ -7,10 +7,10 @@
 
 ## 过程记录规则
 
-- 技术方案统一记录在 `docs/technical-design.md`。
-- 每次准备发给 Claude 的提示词都追加到 `docs/claude-prompts.md`。
-- 每次 Claude 完成后的人工评审都追加到 `docs/claude-review-log.md`。
-- 题目要求与交付文档的覆盖关系维护在 `docs/requirements-traceability.md`。
+- 技术方案统一记录在 `docs/development/technical-design.md`。
+- 每次准备发给 Claude 的提示词都追加到 `docs/development/claude-prompts.md`。
+- 每次 Claude 完成后的人工评审都追加到 `docs/development/claude-review-log.md`。
+- 题目要求与交付文档的覆盖关系维护在 `docs/delivery/requirements-traceability.md`。
 
 ## 采纳的 AI 输出
 
