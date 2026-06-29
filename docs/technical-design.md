@@ -8,7 +8,7 @@
 
 - 前端：React + Vite + TypeScript。
 - 后端：NestJS + TypeScript，运行在 Fastify 适配器上。
-- 单仓库：npm workspaces。
+- 单仓库：pnpm workspace。
 - 模型层：默认 `MockLlmProvider`，可选 `OpenAICompatibleProvider`。
 - 存储层：内存 session store。
 

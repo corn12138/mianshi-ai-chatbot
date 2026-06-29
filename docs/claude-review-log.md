@@ -9,14 +9,41 @@
 - 评审对象：暂无 Claude 产出；当前初始代码由 Codex 先行完成。
 - 结论：尚未进行 Claude completion review。后续一旦 Claude 修改代码，需要在本文件追加正式评审记录。
 
-当前已知基线验证：
+迁移前基线验证：
 
 | 检查项 | 状态 | 证据 |
 | --- | --- | --- |
-| 根目录依赖安装 | Pass | `npm install` 已执行 |
-| 构建 | Pass | `npm run build` 已通过 |
-| 后端测试 | Pass | `npm run test` 已通过，2 个 test file、4 个 test |
+| 根目录依赖安装 | Pass | 初始 npm workspaces 基线已执行，后续已迁移为 pnpm |
+| 构建 | Pass | 初始构建已通过，后续验证命令改为 `pnpm build` |
+| 后端测试 | Pass | 初始测试已通过，后续验证命令改为 `pnpm test` |
 | GitHub public 仓库 | Pass | `https://github.com/corn12138/mianshi-ai-chatbot` |
+
+## Review 002 - pnpm workspace 迁移
+
+- 日期：2026-06-29
+- 对应提示词：`docs/claude-prompts.md` / Prompt 002
+- 评审对象：Codex 迁移产出，后续可作为 Claude 复核基线。
+- 评审结论：Pass
+
+### 验收矩阵
+
+| 要求 | 状态 | 证据 | 备注 |
+| --- | --- | --- | --- |
+| 使用 pnpm workspace | Pass | `pnpm-workspace.yaml` | workspace 包为 `apps/*` |
+| 根 packageManager 固定 pnpm | Pass | `package.json` | `pnpm@11.7.0` |
+| 删除 npm lockfile | Pass | `package-lock.json` 已删除 |  |
+| 生成 pnpm lockfile | Pass | `pnpm-lock.yaml` |  |
+| 文档启动命令改为 pnpm | Pass | `README.md`、`docs/demo-script.md`、`docs/technical-design.md` |  |
+| 构建通过 | Pass | `pnpm build` |  |
+| 测试通过 | Pass | `pnpm test` | 2 个 test file、4 个 test |
+
+### 验证命令
+
+```bash
+pnpm install
+pnpm build
+pnpm test
+```
 
 ## 正式评审模板
 
@@ -43,8 +70,8 @@
 ### 验证命令
 
 ```bash
-npm run build
-npm run test
+pnpm build
+pnpm test
 ```
 
 ### 采纳、修改、拒绝

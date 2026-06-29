@@ -19,7 +19,7 @@ Goal:
 Build a runnable AI Chatbot MVP for internal employees. The project must demonstrate normal chat, multi-turn context, automatic tool calling, tool results included in final replies, and a mock mode that works without any real LLM API key.
 
 Tech stack:
-- Monorepo using npm workspaces.
+- Monorepo using pnpm workspace.
 - Frontend: React + Vite + TypeScript.
 - Backend: NestJS + TypeScript.
 - Default mode: Mock LLM provider.
@@ -30,7 +30,7 @@ Create this directory structure:
 - apps/web for the React app.
 - apps/api for the NestJS API.
 - docs for solution notes, AI usage notes, and demo script.
-- root README.md, .env.example, package.json, tsconfig.base.json.
+- root README.md, .env.example, package.json, pnpm-workspace.yaml, tsconfig.base.json.
 
 Backend requirements:
 1. Implement POST /api/chat.
@@ -104,8 +104,8 @@ Documentation requirements:
    - Current limitations.
 
 Acceptance criteria:
-- npm install works from the root.
-- npm run dev starts both frontend and backend.
+- pnpm install works from the root.
+- pnpm dev starts both frontend and backend.
 - The app works with no .env file and no API key.
 - The user can send a normal message and receive a reply.
 - Follow-up questions preserve context.
@@ -113,7 +113,7 @@ Acceptance criteria:
 - Todo creation requests automatically call create_todo.
 - Time questions automatically call get_current_time.
 - Tool results appear in the final reply.
-- npm run build passes.
+- pnpm build passes.
 - No real API keys or personal secrets are committed.
 
 Important implementation constraints:
@@ -138,3 +138,39 @@ Important implementation constraints:
 完整提示词
 ```
 ````
+
+## Prompt 002 - 迁移 monorepo 到 pnpm
+
+- 日期：2026-06-29
+- 目标：将现有 npm workspaces 项目迁移为 pnpm workspace，并同步 README、技术文档、录屏脚本和验证命令。
+- 状态：由 Codex 直接执行；如后续交给 Claude 复核或继续实现，使用此提示词作为任务来源。
+- 关联文档：`docs/technical-design.md`、`docs/requirements-traceability.md`
+
+```text
+You are updating the existing AI Chatbot MVP repository.
+
+Goal:
+Migrate the monorepo from npm workspaces to pnpm workspace.
+
+Required changes:
+1. Add pnpm-workspace.yaml with apps/* as workspace packages.
+2. Remove the root package.json workspaces field.
+3. Add packageManager: pnpm@11.7.0 to the root package.json.
+4. Rewrite root scripts to use pnpm workspace filters:
+   - pnpm dev starts apps/api and apps/web concurrently.
+   - pnpm build builds both workspaces.
+   - pnpm test runs API tests.
+   - pnpm check runs build and test.
+5. Remove package-lock.json.
+6. Generate pnpm-lock.yaml with pnpm install.
+7. Update README and docs so local setup and verification use pnpm install, pnpm dev, pnpm build, and pnpm test.
+8. Do not change product behavior, API shapes, tool behavior, or UI behavior.
+
+Acceptance criteria:
+- pnpm install succeeds from the repository root.
+- pnpm build passes.
+- pnpm test passes.
+- No package-lock.json remains.
+- pnpm-lock.yaml is committed.
+- Documentation no longer instructs reviewers to use npm for normal setup.
+```

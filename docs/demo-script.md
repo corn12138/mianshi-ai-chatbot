@@ -29,8 +29,8 @@
 ## 4. 本地启动
 
 ```bash
-npm install
-npm run dev
+pnpm install
+pnpm dev
 ```
 
 打开 http://localhost:5173。

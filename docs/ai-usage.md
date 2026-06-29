@@ -17,6 +17,7 @@
 - 采用前后端分离的 React + NestJS 单仓库方案，因为它能清楚展示全栈边界。
 - 采用 mock provider 默认启用，因为题目明确要求无 API Key 也能体验核心流程。
 - 采用 HR/IT + 待办 + 时间工具，因为它们既贴近内部员工场景，又容易稳定演示。
+- 采用 pnpm workspace 管理 monorepo，减少 npm workspaces 与后续工具链不一致的问题。
 
 ## 修改的 AI 输出
 

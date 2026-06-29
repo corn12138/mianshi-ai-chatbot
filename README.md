@@ -4,9 +4,11 @@
 
 ## 本地启动
 
+本项目使用 pnpm workspace，推荐 pnpm `11.7.0`。
+
 ```bash
-npm install
-npm run dev
+pnpm install
+pnpm dev
 ```
 
 默认地址：
@@ -82,8 +84,8 @@ Web Chat UI
 ## 验证
 
 ```bash
-npm run build
-npm run test
+pnpm build
+pnpm test
 ```
 
 建议演示问题：

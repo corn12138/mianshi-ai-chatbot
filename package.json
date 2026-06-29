@@ -2,14 +2,12 @@
   "name": "mianshi-ai-chatbot",
   "version": "0.1.0",
   "private": true,
-  "workspaces": [
-    "apps/*"
-  ],
+  "packageManager": "pnpm@11.7.0",
   "scripts": {
-    "dev": "concurrently -k \"npm run dev -w apps/api\" \"npm run dev -w apps/web\"",
-    "build": "npm run build -w apps/api && npm run build -w apps/web",
-    "test": "npm run test -w apps/api",
-    "check": "npm run build && npm run test"
+    "dev": "concurrently -k \"pnpm --filter @mianshi/api dev\" \"pnpm --filter @mianshi/web dev\"",
+    "build": "pnpm --filter @mianshi/api build && pnpm --filter @mianshi/web build",
+    "test": "pnpm --filter @mianshi/api test",
+    "check": "pnpm build && pnpm test"
   },
   "devDependencies": {
     "concurrently": "^9.2.1"
