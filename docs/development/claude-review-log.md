@@ -122,6 +122,61 @@ rg -n "sk-[A-Za-z0-9]|gho_[A-Za-z0-9]|OPENAI_API_KEY=.*[A-Za-z0-9]{8,}|TOKEN=.*[
 - 不能判定 Prompt 001 完成：README/Prompt 的首要本地启动命令 `pnpm dev` 当前失败。
 - 下一步应先修复 dev 启动，再补齐测试断言和未跟踪测试文件。
 
+## Review 005 - Prompt 001 Mock MVP 复审
+
+- 日期：2026-06-29
+- 对应提示词：`docs/development/claude-prompts.md` / Prompt 001；修复任务：`docs/development/claude-mock-mvp-fix-task.md`
+- Claude 修改范围：`apps/api/src/chat/chat.controller.ts`、`apps/api/src/chat/chat.service.ts`、`apps/api/src/chat/chat.service.spec.ts`、`apps/api/src/tools/tool-registry.spec.ts`
+- 评审结论：Pass。基于原始笔试 MD 和 Prompt 001，mock 模式模拟的核心全功能已完成并通过本地验证。
+
+### 发现
+
+无阻塞问题。上一轮 P1 `pnpm dev` 后端启动失败已修复；测试覆盖也已补齐。
+
+### 验收矩阵
+
+| 要求 | 状态 | 证据 | 备注 |
+| --- | --- | --- | --- |
+| README 本地启动命令可用 | Pass | `pnpm dev` | 前端 `5173`、后端 `3000` 均成功启动 |
+| 无 `.env` / 无 API Key 可体验 | Pass | `test -f .env` 输出 `no .env file`；HTTP 返回 `mode: "mock"` |  |
+| 网页可发起对话 | Pass | `GET http://localhost:5173/` 返回 200 | 前端页面可服务 |
+| 系统返回 AI 回复 | Pass | HTTP smoke `你好，你能做什么？` 返回 201 且包含内部助手说明 |  |
+| 多轮上下文保留 | Pass | 同 session 追问 `那远程办公时也适用吗？` 返回 6 条 messages |  |
+| 自动工具调用 | Pass | HR/todo/time smoke 分别返回 `lookup_hr_policy`、`create_todo`、`get_current_time` | 非前端按钮触发 |
+| 工具结果进入最终回复 | Pass | smoke 回复包含 `年假政策`、`已创建待办`、`Asia/Shanghai` |  |
+| 工具失败处理 | Pass | `tool-registry.spec.ts` 覆盖 invalid topic、missing title、unknown tool |  |
+| 空消息校验 | Pass | blank message 返回 400 `message is required` |  |
+| 前端展示工具调用详情 | Pass | `apps/web/src/main.tsx` 渲染 `message.toolCalls` 的 name/status/result | 通过代码证据确认 |
+| `pnpm build` / `pnpm test` | Pass | `pnpm check` 通过 | 3 个 test file、12 个 test |
+| 无敏感信息 | Pass | 无 `.env`；secret grep 无命中 |  |
+
+### 验证命令
+
+```bash
+git status --short --branch
+pnpm check
+test -f .env && echo ".env exists" || echo "no .env file"
+rg -n "sk-[A-Za-z0-9]|gho_[A-Za-z0-9]|OPENAI_API_KEY=.*[A-Za-z0-9]{8,}|TOKEN=.*[A-Za-z0-9]{8,}" . --glob '!node_modules' --glob '!apps/*/dist' --glob '!pnpm-lock.yaml'
+pnpm dev
+node <HTTP smoke script against http://localhost:3000/api/chat and http://localhost:5173/>
+```
+
+### Smoke 结果
+
+| Case | Result |
+| --- | --- |
+| `你好，你能做什么？` | 201, `mode: mock`, normal assistant reply |
+| `公司年假政策是什么？` | 201, `lookup_hr_policy`, reply includes `年假政策` |
+| `那远程办公时也适用吗？` | 201, same session, reply includes `远程办公政策` |
+| `帮我创建一个待办：明天提交报销` | 201, `create_todo`, reply includes todo confirmation |
+| `现在几点？` | 201, `get_current_time`, reply includes `Asia/Shanghai` |
+| blank message | 400, `message is required` |
+| web page | 200, `text/html` |
+
+### 后续
+
+因为本轮已通过，不需要再生成下一步修复提示词。后续工作应转向录屏准备、README 最终复核、GitHub 提交链接和视频链接交付。
+
 ## 正式评审模板
 
 ````md

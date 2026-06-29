@@ -8,11 +8,15 @@ import { ToolRegistry } from '../tools/tool-registry';
 
 @Injectable()
 export class ChatService {
+  // Tokens are declared explicitly so dependency injection does not rely on
+  // reflected `design:paramtypes` metadata. The `tsx`/esbuild dev runtime does
+  // not emit that metadata, so without these the API fails to boot under
+  // `pnpm dev` (see docs/development/claude-review-log.md Review 004).
   constructor(
-    private readonly sessions: InMemorySessionStore,
+    @Inject(InMemorySessionStore) private readonly sessions: InMemorySessionStore,
     @Inject(LLM_PROVIDER) private readonly llm: LlmProvider,
-    private readonly toolRouter: ToolRouter,
-    private readonly toolRegistry: ToolRegistry,
+    @Inject(ToolRouter) private readonly toolRouter: ToolRouter,
+    @Inject(ToolRegistry) private readonly toolRegistry: ToolRegistry,
   ) {}
 
   async chat(body: ChatRequestDto): Promise<ChatResponse> {
