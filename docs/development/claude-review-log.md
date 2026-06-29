@@ -71,6 +71,57 @@ rg -n "docs/(solution|ai-usage|demo-script|requirements-traceability|technical-d
 pnpm check
 ```
 
+## Review 004 - Prompt 001 Mock MVP 完成度审计
+
+- 日期：2026-06-29
+- 对应提示词：`docs/development/claude-prompts.md` / Prompt 001
+- Claude 修改范围：本次本地工作区出现 `apps/api/src/tools/tool-registry.spec.ts` 未跟踪文件；其余核心实现来自既有代码。
+- 评审结论：Partial，mock 业务链路在构建产物模式下可用，但 Prompt 001 要求的 `pnpm dev` 本地启动链路失败，不能算完整完成。
+
+### 发现
+
+| 严重级别 | 问题 | 证据 | 影响 | 建议 |
+| --- | --- | --- | --- | --- |
+| P1 | `pnpm dev` 无法启动后端 API | `package.json:7` 使用 `tsx watch src/main.ts`；运行时报 `Nest can't resolve dependencies of the ChatService (?, Symbol(LLM_PROVIDER))`；`apps/api/src/chat/chat.service.ts:11`-`15` 构造函数依赖需要运行时注入 | 原始 Prompt 明确要求 `pnpm dev` 启动前后端；评审按 README 启动时网页会起来但 `/api/chat` 不可用，mock MVP 主流程失败 | 在 `ChatService` 构造函数上为 `InMemorySessionStore`、`ToolRouter`、`ToolRegistry` 增加显式 `@Inject(...)`，或改用能保留 decorator metadata 的 dev 启动方式；优先做最小代码改动并验证 `pnpm dev` |
+| P2 | 新增工具注册测试未纳入 Git 追踪 | `git status --short` 显示 `?? apps/api/src/tools/tool-registry.spec.ts` | 本地 `pnpm test` 会跑到该测试，但 GitHub 仓库和最终提交不会包含它，测试覆盖证据会丢失 | 将该测试作为正式变更纳入提交，或移除后在已跟踪测试中补齐同等覆盖 |
+| P2 | Prompt 001 要求的“tool results appearing in final assistant replies”缺少单元测试断言 | `apps/api/src/chat/chat.service.spec.ts:17`-`28` 只断言 tool name、sessionId 和 message length，没有断言 `reply` 包含工具结果 | 运行 smoke 能证明当前行为可用，但自动测试没有锁住最关键的最终回复要求，后续改动可能回归 | 在 `ChatService` 测试里断言 HR/todo/time 的 `reply` 包含对应工具结果关键词，并补空消息 400 或服务级校验测试 |
+
+### 验收矩阵
+
+| 要求 | 状态 | 证据 | 备注 |
+| --- | --- | --- | --- |
+| `pnpm install` works | Pass | 已存在 pnpm lockfile，依赖可用 | 本轮未重复完整安装 |
+| `pnpm dev` starts frontend and backend | Fail | dev 启动时 API 报 Nest DI 错误 | 阻塞项 |
+| No `.env` / API key required | Pass | `no .env file`；API smoke 返回 `mode: "mock"` |  |
+| Normal chat works | Partial | 构建产物 API smoke greeting 通过 | dev 模式失败，因此整体 Partial |
+| Follow-up context works | Partial | API smoke 同 session 追问返回 6 条 messages 和 `lookup_hr_policy` | dev 模式失败 |
+| HR/IT policy auto tool call | Partial | API smoke `公司年假政策是什么？` 返回 `lookup_hr_policy` | dev 模式失败 |
+| Todo auto tool call | Partial | API smoke `帮我创建一个待办：明天提交报销` 返回 `create_todo` | dev 模式失败 |
+| Time auto tool call | Partial | API smoke `现在几点？` 返回 `get_current_time` | dev 模式失败 |
+| Tool results in final reply | Pass | API smoke reply 包含政策、todo id、Asia/Shanghai 时间 | 建议补单元测试 |
+| Frontend displays tool details | Partial | `apps/web/src/main.tsx:113`-`120` 渲染 `message.toolCalls` | 未完成浏览器端联调，因为 `pnpm dev` API 失败 |
+| `pnpm build` passes | Pass | `pnpm check` 通过 |  |
+| `pnpm test` passes | Pass | `pnpm check` 通过，3 个 test file、8 个 test | 其中 1 个测试文件未跟踪 |
+| No secrets committed | Pass | 无 `.env`；secret grep 无命中 |  |
+
+### 验证命令
+
+```bash
+git status --short --branch
+pnpm check
+pnpm dev
+pnpm --filter @mianshi/api start
+node <HTTP smoke script against POST /api/chat>
+test -f .env && echo ".env exists" || echo "no .env file"
+rg -n "sk-[A-Za-z0-9]|gho_[A-Za-z0-9]|OPENAI_API_KEY=.*[A-Za-z0-9]{8,}|TOKEN=.*[A-Za-z0-9]{8,}" . --glob '!node_modules' --glob '!apps/*/dist' --glob '!pnpm-lock.yaml'
+```
+
+### 结论
+
+- Mock 业务能力本身基本具备：构建产物模式下普通对话、多轮追问、HR/IT、待办、时间、空消息 400 都跑通。
+- 不能判定 Prompt 001 完成：README/Prompt 的首要本地启动命令 `pnpm dev` 当前失败。
+- 下一步应先修复 dev 启动，再补齐测试断言和未跟踪测试文件。
+
 ## 正式评审模板
 
 ````md
